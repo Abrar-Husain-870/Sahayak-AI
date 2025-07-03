@@ -1,0 +1,221 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Sparkles, Upload } from "lucide-react";
+import Image from "next/image";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { LanguageSelect } from "@/components/language-select";
+import { useToast } from "@/hooks/use-toast";
+import { createDifferentiatedMaterials } from "@/ai/flows/create-differentiated-materials";
+import type { CreateDifferentiatedMaterialsOutput } from "@/ai/flows/create-differentiated-materials";
+import { DashboardHeader } from "@/components/dashboard-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const formSchema = z.object({
+  textbookPageImage: z.any().refine((file) => file instanceof File, "Image is required."),
+  gradeLevels: z.string().min(1, "At least one grade level is required."),
+  language: z.string(),
+});
+
+export default function DifferentiatedMaterialsPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [generatedWorksheets, setGeneratedWorksheets] = useState<CreateDifferentiatedMaterialsOutput["worksheets"]>([]);
+  const [preview, setPreview] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      gradeLevels: "1, 2, 3",
+      language: "English",
+    },
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      form.setValue("textbookPageImage", file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    setGeneratedWorksheets([]);
+    try {
+      const imageBase64 = await toBase64(values.textbookPageImage);
+      const result = await createDifferentiatedMaterials({
+        ...values,
+        textbookPageImage: imageBase64,
+      });
+      setGeneratedWorksheets(result.worksheets);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem generating the worksheets.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <DashboardHeader
+        title="Differentiated Materials"
+        description="Upload a textbook page to create worksheets for different grade levels."
+      />
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="grid gap-8 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Materials</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="textbookPageImage"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>Textbook Page Image</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center justify-center w-full">
+                            <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-background hover:bg-secondary">
+                              {preview ? (
+                                <Image src={preview} alt="Preview" width={256} height={256} className="object-contain h-full w-full p-2" />
+                              ) : (
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                  <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                  <p className="text-xs text-muted-foreground">PNG, JPG, or GIF</p>
+                                </div>
+                              )}
+                              <Input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} accept="image/*"/>
+                            </label>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="gradeLevels"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Grade Levels</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 1, 2, 3" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="language"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Language</FormLabel>
+                        <LanguageSelect value={field.value} onValueChange={field.onChange} />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={isLoading}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isLoading ? "Generating..." : "Generate Worksheets"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Generated Worksheets</CardTitle>
+              <CardDescription>
+                Worksheets tailored for each grade level you provided.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[500px] pr-4">
+                <div className="space-y-6">
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Card key={i}>
+                        <CardHeader>
+                          <Skeleton className="h-6 w-24" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : generatedWorksheets.length > 0 ? (
+                    generatedWorksheets.map((ws, index) => (
+                      <Card key={index}>
+                        <CardHeader>
+                          <CardTitle>Grade {ws.gradeLevel}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                            {ws.worksheetContent}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Your generated worksheets will appear here.
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
