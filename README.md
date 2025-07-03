@@ -14,14 +14,10 @@ Before you begin, ensure you have the necessary software installed:
 *   **Node.js and npm**: This project requires Node.js. We recommend using a recent LTS version (v18 or higher). You can download and install Node.js from the official [Node.js website](https://nodejs.org/). npm (Node Package Manager) is included with Node.js.
 
 
-
-Make sure you have the following installed:
-
-*   Git
-*   Node.js (v18 or higher recommended)
-
 ### Cloning the Repository
 
 First, clone the repository to your local machine:
+
+
 
 
