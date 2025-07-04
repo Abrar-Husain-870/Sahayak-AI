@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+
+import { NProgressProvider } from "@/components/nprogress-provider";
+import "@/styles/nprogress.css";
+import Providers from "./providers";
+
+const fontSans = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
   title: "Sahayak AI",
@@ -15,26 +26,27 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body
         className={cn(
-          "min-h-screen bg-background font-body antialiased",
-          "font-body"
+          "min-h-screen bg-background font-sans antialiased",
+          fontSans.variable
         )}
+        suppressHydrationWarning={true}
       >
-        {children}
-        <Toaster />
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            forcedTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <NProgressProvider>
+                {children}
+                <Toaster />
+            </NProgressProvider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

@@ -10,6 +10,7 @@ import {
   BrainCircuit,
   Paintbrush,
   CalendarDays,
+  History,
 } from "lucide-react";
 import {
   Sidebar,
@@ -47,6 +48,11 @@ const menuItems = [
     label: "Lesson Planner",
     icon: CalendarDays,
   },
+  {
+    href: "/history",
+    label: "History",
+    icon: History,
+  },
 ];
 
 export function DashboardSidebar() {
@@ -64,9 +70,8 @@ export function DashboardSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} legacyBehavior passHref>
+              <Link href={item.href}>
                 <SidebarMenuButton
-                  asChild
                   isActive={pathname === item.href}
                   tooltip={{
                     children: item.label,
@@ -77,10 +82,8 @@ export function DashboardSidebar() {
                       "bg-primary/10 text-primary hover:bg-primary/20"
                   )}
                 >
-                  <a>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </a>
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

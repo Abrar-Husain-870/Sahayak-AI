@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useSession } from "next-auth/react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Sparkles, Upload } from "lucide-react";
@@ -29,8 +32,17 @@ import { useToast } from "@/hooks/use-toast";
 import { createDifferentiatedMaterials } from "@/ai/flows/create-differentiated-materials";
 import type { CreateDifferentiatedMaterialsOutput } from "@/ai/flows/create-differentiated-materials";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const DifferentiatedMaterialsResult = dynamic(
+  () =>
+    import(
+      "@/components/feature-results/differentiated-materials-result"
+    ).then((mod) => mod.DifferentiatedMaterialsResult),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
 
 const formSchema = z.object({
   textbookPageImage: z.any().refine((file) => file instanceof File, "Image is required."),
@@ -39,11 +51,15 @@ const formSchema = z.object({
 });
 
 export default function DifferentiatedMaterialsPage() {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedWorksheets, setGeneratedWorksheets] = useState<CreateDifferentiatedMaterialsOutput["worksheets"]>([]);
-  const [preview, setPreview] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Initialize with server-safe defaults
+  const [preview, setPreview] = useState<string | null>(null);
+  const [generatedWorksheets, setGeneratedWorksheets] = useState<
+    CreateDifferentiatedMaterialsOutput["worksheets"]
+  >([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,6 +67,8 @@ export default function DifferentiatedMaterialsPage() {
       language: "English",
     },
   });
+
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,7 +99,18 @@ export default function DifferentiatedMaterialsPage() {
         ...values,
         textbookPageImage: imageBase64,
       });
-      setGeneratedWorksheets(result.worksheets);
+            setGeneratedWorksheets(result.worksheets);
+
+      if (session?.user?.email) {
+        await addDoc(collection(db, "history"), {
+          userId: session.user.email,
+          feature: "differentiated-materials",
+          request: `Grade Levels: ${values.gradeLevels}`,
+          language: values.language,
+          content: JSON.stringify(result.worksheets, null, 2),
+          createdAt: serverTimestamp(),
+        });
+      }
     } catch (error) {
       console.error(error);
       toast({
@@ -167,53 +196,10 @@ export default function DifferentiatedMaterialsPage() {
               </Form>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Generated Worksheets</CardTitle>
-              <CardDescription>
-                Worksheets tailored for each grade level you provided.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="space-y-6">
-                  {isLoading ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                      <Card key={i}>
-                        <CardHeader>
-                          <Skeleton className="h-6 w-24" />
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-3/4" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : generatedWorksheets.length > 0 ? (
-                    generatedWorksheets.map((ws, index) => (
-                      <Card key={index}>
-                        <CardHeader>
-                          <CardTitle>Grade {ws.gradeLevel}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                            {ws.worksheetContent}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground">
-                      Your generated worksheets will appear here.
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+          <DifferentiatedMaterialsResult
+            isLoading={isLoading}
+            generatedWorksheets={generatedWorksheets}
+          />
         </div>
       </main>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,7 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { designVisualAid } from "@/ai/flows/design-visual-aids";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from "next/dynamic";
+
+const VisualAidsResult = dynamic(
+  () =>
+    import("@/components/feature-results/visual-aids-result").then(
+      (mod) => mod.VisualAidsResult
+    ),
+  { ssr: false }
+);
 
 const formSchema = z.object({
   description: z.string().min(10, {
@@ -24,9 +32,10 @@ const formSchema = z.object({
 
 export default function VisualAidsPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Initialize with server-safe defaults
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,12 +43,14 @@ export default function VisualAidsPage() {
     },
   });
 
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setGeneratedImage(null);
     try {
       const result = await designVisualAid(values);
-      setGeneratedImage(result.media);
+            setGeneratedImage(result.media);
     } catch (error) {
       console.error(error);
       toast({
@@ -92,33 +103,10 @@ export default function VisualAidsPage() {
               </Form>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Generated Visual Aid</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full aspect-square bg-muted rounded-lg flex items-center justify-center">
-                {isLoading ? (
-                  <Skeleton className="h-full w-full" />
-                ) : generatedImage ? (
-                  <Image
-                    src={generatedImage}
-                    alt="Generated Visual Aid"
-                    width={512}
-                    height={512}
-                    className="object-contain h-full w-full"
-                  />
-                ) : (
-                  <div className="text-center text-muted-foreground p-8">
-                    <ImageIcon className="mx-auto h-12 w-12" />
-                    <p className="mt-4">
-                      Your generated visual aid will appear here.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <VisualAidsResult
+            isLoading={isLoading}
+            generatedImage={generatedImage}
+          />
         </div>
       </main>
     </div>

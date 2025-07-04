@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useSession } from "next-auth/react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Sparkles } from "lucide-react";
@@ -14,7 +17,15 @@ import { LanguageSelect } from "@/components/language-select";
 import { useToast } from "@/hooks/use-toast";
 import { createWeeklyLessonPlan } from "@/ai/flows/create-weekly-lesson-plans";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from "next/dynamic";
+
+const LessonPlannerResult = dynamic(
+  () =>
+    import("@/components/feature-results/lesson-planner-result").then(
+      (mod) => mod.LessonPlannerResult
+    ),
+  { ssr: false }
+);
 
 const formSchema = z.object({
   topic: z.string().min(3, {
@@ -27,10 +38,12 @@ const formSchema = z.object({
 });
 
 export default function LessonPlannerPage() {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState("");
   const { toast } = useToast();
 
+  // Initialize with server-safe defaults
+  const [generatedPlan, setGeneratedPlan] = useState("");
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,12 +53,25 @@ export default function LessonPlannerPage() {
     },
   });
 
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setGeneratedPlan("");
     try {
       const result = await createWeeklyLessonPlan(values);
-      setGeneratedPlan(result.lessonPlan);
+            setGeneratedPlan(result.lessonPlan);
+
+      if (session?.user?.email) {
+        await addDoc(collection(db, "history"), {
+          userId: session.user.email,
+          feature: "lesson-planner",
+          request: `Topic: ${values.topic}, Grade Level: ${values.gradeLevel}`,
+          language: values.language,
+          content: result.lessonPlan,
+          createdAt: serverTimestamp(),
+        });
+      }
     } catch (error) {
       console.error(error);
       toast({
@@ -121,30 +147,10 @@ export default function LessonPlannerPage() {
               </Form>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Generated Weekly Lesson Plan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-              ) : generatedPlan ? (
-                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap h-[500px] overflow-auto">
-                  {generatedPlan}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  Your generated lesson plan will appear here.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <LessonPlannerResult
+            isLoading={isLoading}
+            generatedPlan={generatedPlan}
+          />
         </div>
       </main>
     </div>

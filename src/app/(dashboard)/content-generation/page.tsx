@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,7 +14,18 @@ import { LanguageSelect } from "@/components/language-select";
 import { useToast } from "@/hooks/use-toast";
 import { generateHyperLocalContent } from "@/ai/flows/generate-hyper-local-content";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from "next/dynamic";
+import { useSession } from "next-auth/react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
+const ContentGenerationResult = dynamic(
+  () =>
+    import("@/components/feature-results/content-generation-result").then(
+      (mod) => mod.ContentGenerationResult
+    ),
+  { ssr: false }
+);
 
 const formSchema = z.object({
   request: z.string().min(10, {
@@ -24,10 +35,12 @@ const formSchema = z.object({
 });
 
 export default function ContentGenerationPage() {
+    const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState("");
   const { toast } = useToast();
 
+  // Initialize with server-safe defaults
+  const [generatedContent, setGeneratedContent] = useState("");
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,12 +49,25 @@ export default function ContentGenerationPage() {
     },
   });
 
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setGeneratedContent("");
     try {
-      const result = await generateHyperLocalContent(values);
+            const result = await generateHyperLocalContent(values);
       setGeneratedContent(result.content);
+
+      if (session?.user?.email) {
+        await addDoc(collection(db, "history"), {
+          userId: session.user.email,
+          request: values.request,
+          language: values.language,
+          content: result.content,
+          createdAt: serverTimestamp(),
+          feature: "content-generation",
+        });
+      }
     } catch (error) {
       console.error(error);
       toast({
@@ -53,6 +79,8 @@ export default function ContentGenerationPage() {
       setIsLoading(false);
     }
   }
+
+
 
   return (
     <div className="flex flex-col h-full">
@@ -108,28 +136,10 @@ export default function ContentGenerationPage() {
               </Form>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Generated Content</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
-              ) : generatedContent ? (
-                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                  {generatedContent}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  Your generated content will appear here.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <ContentGenerationResult
+            isLoading={isLoading}
+            generatedContent={generatedContent}
+          />
         </div>
       </main>
     </div>

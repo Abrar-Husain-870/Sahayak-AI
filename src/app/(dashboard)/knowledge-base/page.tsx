@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useSession } from "next-auth/react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Sparkles } from "lucide-react";
@@ -14,7 +17,15 @@ import { LanguageSelect } from "@/components/language-select";
 import { useToast } from "@/hooks/use-toast";
 import { explainConcept } from "@/ai/flows/act-as-instant-knowledge-base";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from "next/dynamic";
+
+const KnowledgeBaseResult = dynamic(
+  () =>
+    import("@/components/feature-results/knowledge-base-result").then(
+      (mod) => mod.KnowledgeBaseResult
+    ),
+  { ssr: false }
+);
 
 const formSchema = z.object({
   question: z.string().min(5, {
@@ -24,10 +35,12 @@ const formSchema = z.object({
 });
 
 export default function KnowledgeBasePage() {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedExplanation, setGeneratedExplanation] = useState("");
   const { toast } = useToast();
 
+  // Initialize with server-safe defaults
+  const [generatedExplanation, setGeneratedExplanation] = useState("");
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,12 +49,25 @@ export default function KnowledgeBasePage() {
     },
   });
 
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setGeneratedExplanation("");
     try {
       const result = await explainConcept(values);
-      setGeneratedExplanation(result.explanation);
+            setGeneratedExplanation(result.explanation);
+
+      if (session?.user?.email) {
+        await addDoc(collection(db, "history"), {
+          userId: session.user.email,
+          feature: "knowledge-base",
+          request: values.question,
+          language: values.language,
+          content: result.explanation,
+          createdAt: serverTimestamp(),
+        });
+      }
     } catch (error) {
       console.error(error);
       toast({
@@ -104,28 +130,10 @@ export default function KnowledgeBasePage() {
               </Form>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Generated Explanation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
-              ) : generatedExplanation ? (
-                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                  {generatedExplanation}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  Your generated explanation will appear here.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <KnowledgeBaseResult
+            isLoading={isLoading}
+            generatedExplanation={generatedExplanation}
+          />
         </div>
       </main>
     </div>
