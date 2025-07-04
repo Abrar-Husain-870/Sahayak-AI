@@ -18,7 +18,7 @@ Before you begin, ensure you have the necessary software installed:
 First, clone the repository to your local machine using the following command in your terminal:
 
 ```bash
-git clone https://github.com/MohdSajidJafri/Sahayak-AI.git
+git clone https://github.com/Abrar-Husain-870/Sahayak-AI.git
 ```
 
 ### 2. Installing Dependencies
