@@ -2,6 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CheckCircle2, BookOpen, Target, Wrench, ClipboardCheck, Users } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import {
   Accordion,
   AccordionContent,
@@ -70,28 +72,36 @@ export function LessonPlannerResult({
             <Badge>{plan.gradeLevel}</Badge>
             <Badge variant="secondary">{plan.subject}</Badge>
           </div>
-          <p className="text-muted-foreground">{planOverview}</p>
+          <div className="prose prose-sm max-w-none text-muted-foreground">
+            <ReactMarkdown>{planOverview}</ReactMarkdown>
+          </div>
         </div>
 
         {planObjectives.length > 0 && (
           <div>
             <h3 className="font-semibold mb-2">Learning Objectives</h3>
-            <ul className="list-disc list-inside space-y-1">
-              {planObjectives.map((obj: string, i: number) => (
-                <li key={i}>{obj}</li>
-              ))}
-            </ul>
+            <div className="prose prose-sm max-w-none text-muted-foreground">
+              <ul className="list-disc list-inside space-y-1">
+                {planObjectives.map((obj: string, i: number) => (
+                  <li key={i}><ReactMarkdown>{obj}</ReactMarkdown></li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
 
         {planMaterials.length > 0 && (
           <div>
             <h3 className="font-semibold mb-2">Materials</h3>
-            <ul className="list-disc list-inside space-y-1">
-              {planMaterials.map((mat: string, i: number) => (
-                <li key={i}>{mat}</li>
-              ))}
-            </ul>
+            <div className="prose prose-sm max-w-none text-muted-foreground">
+              <ul>
+                {planMaterials.map((material: string, index: number) => (
+                  <li key={index}>
+                    <ReactMarkdown>{material}</ReactMarkdown>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
 
@@ -112,57 +122,65 @@ export function LessonPlannerResult({
                   <div className="space-y-4 pl-2">
                     {dayPlan.learningObjectives && (
                       <div>
-                        <h4 className="font-semibold">Learning Objectives:</h4>
-                        <ul className="list-disc list-inside">
-                          {dayPlan.learningObjectives.map(
-                            (obj: string, i: number) => (
-                              <li key={i}>{obj}</li>
-                            )
-                          )}
-                        </ul>
+                        <p className="font-semibold">Learning Objectives:</p>
+                        <div className="prose prose-sm max-w-none text-muted-foreground mt-1">
+                          <ul>
+                            {dayPlan.learningObjectives.map((obj: string, i: number) => (
+                              <li key={i}>
+                                <ReactMarkdown>{obj}</ReactMarkdown>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     )}
                     {dayPlan.learningObjective && (
                       <div>
                         <h4 className="font-semibold">Learning Objective:</h4>
-                        <p>{dayPlan.learningObjective}</p>
+                        <div className="prose prose-sm max-w-none text-muted-foreground"><ReactMarkdown>{dayPlan.learningObjective}</ReactMarkdown></div>
                       </div>
                     )}
                     <div>
-                      <h4 className="font-semibold">Activities:</h4>
-                      <ul className="list-disc list-inside">
-                        {dayPlan.activities.map((act: string, i: number) => (
-                          <li key={i}>{act}</li>
-                        ))}
-                      </ul>
+                      <p className="font-semibold">Activities:</p>
+                      <div className="prose prose-sm max-w-none text-muted-foreground mt-1">
+                        <ul>
+                          {dayPlan.activities.map((act: string, i: number) => (
+                            <li key={i}>
+                              <ReactMarkdown>{act}</ReactMarkdown>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                     {dayPlan.materials && dayPlan.materials.length > 0 && (
                       <div>
-                        <h4 className="font-semibold">Materials:</h4>
-                        <ul className="list-disc list-inside">
-                          {dayPlan.materials.map((mat: string, i: number) => (
-                            <li key={i}>{mat}</li>
-                          ))}
-                        </ul>
+                        <p className="font-semibold">Materials:</p>
+                        <div className="prose prose-sm max-w-none text-muted-foreground mt-1">
+                          <ul>
+                            {dayPlan.materials.map((mat: string, i: number) => (
+                              <li key={i}>
+                                <ReactMarkdown>{mat}</ReactMarkdown>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     )}
                     {dayPlan.assessment && (
                       <div>
-                        <h4 className="font-semibold">Assessment:</h4>
-                        <p>{dayPlan.assessment}</p>
+                        <p className="font-semibold">Assessment:</p>
+                        <div className="prose prose-sm max-w-none text-muted-foreground mt-1">
+                          <ReactMarkdown>{dayPlan.assessment}</ReactMarkdown>
+                        </div>
                       </div>
                     )}
                     {dayPlan.differentiation && (
                       <div>
                         <h4 className="font-semibold">Differentiation:</h4>
-                        <p>
-                          <strong>Support:</strong>{" "}
-                          {dayPlan.differentiation.support}
-                        </p>
-                        <p>
-                          <strong>Challenge:</strong>{" "}
-                          {dayPlan.differentiation.challenge}
-                        </p>
+                        <div className="prose prose-sm max-w-none text-muted-foreground">
+                          <p><strong>Support:</strong> <ReactMarkdown components={{ p: 'span' }}>{dayPlan.differentiation.support}</ReactMarkdown></p>
+                          <p><strong>Challenge:</strong> <ReactMarkdown components={{ p: 'span' }}>{dayPlan.differentiation.challenge}</ReactMarkdown></p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -178,17 +196,21 @@ export function LessonPlannerResult({
             {plan.assessment.formative && (
               <div>
                 <h4 className="font-semibold">Formative:</h4>
-                <ul className="list-disc list-inside">
-                  {plan.assessment.formative.map((item: string, i: number) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
+                <div className="prose prose-sm max-w-none text-muted-foreground">
+                  <ul>
+                    {plan.assessment.formative.map((objective: string, index: number) => (
+                      <li key={index}>
+                        <ReactMarkdown>{objective}</ReactMarkdown>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
             {plan.assessment.summative && (
               <div className="mt-2">
                 <h4 className="font-semibold">Summative:</h4>
-                <p>{plan.assessment.summative}</p>
+                <div className="prose prose-sm max-w-none text-muted-foreground"><ReactMarkdown>{plan.assessment.summative}</ReactMarkdown></div>
               </div>
             )}
           </div>
