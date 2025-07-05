@@ -11,6 +11,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { DashboardHeader } from "@/components/dashboard-header";
+import ReactMarkdown from "react-markdown";
 import { HistoryLessonPlanViewer } from "@/components/history/history-lesson-plan-viewer";
 import {
   Card,
@@ -175,7 +176,7 @@ export default function HistoryPage() {
                     <HistoryLessonPlanViewer content={item.content} />
                   ) : (
                     <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
-                      {item.content}
+                      <ReactMarkdown>{item.content}</ReactMarkdown>
                     </div>
                   )}
                 </CardContent>

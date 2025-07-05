@@ -30,7 +30,7 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
           <p className="text-sm text-muted-foreground hidden sm:block">
             Welcome, {session.user?.name}
           </p>
-          <Button variant="destructive" onClick={() => signOut()}>
+          <Button variant="destructive" onClick={() => signOut({ callbackUrl: '/login' })}>
             Sign Out
           </Button>
         </div>

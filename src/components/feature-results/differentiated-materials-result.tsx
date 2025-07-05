@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from "react-markdown";
 import type { CreateDifferentiatedMaterialsOutput } from "@/ai/flows/create-differentiated-materials";
 
 interface DifferentiatedMaterialsResultProps {
@@ -38,7 +39,7 @@ export function DifferentiatedMaterialsResult({
                     {worksheet.gradeLevel}
                   </h3>
                   <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                    {worksheet.worksheet}
+                    <ReactMarkdown>{worksheet.worksheetContent}</ReactMarkdown>
                   </div>
                 </div>
               ))}

@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import ReactMarkdown from "react-markdown";
 
 interface KnowledgeBaseResultProps {
   isLoading: boolean;
@@ -26,7 +27,7 @@ export function KnowledgeBaseResult({
           </div>
         ) : generatedExplanation ? (
           <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-            {generatedExplanation}
+            <ReactMarkdown>{generatedExplanation}</ReactMarkdown>
           </div>
         ) : (
           <p className="text-muted-foreground">
