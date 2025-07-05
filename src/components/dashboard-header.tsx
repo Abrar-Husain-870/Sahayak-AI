@@ -11,6 +11,7 @@ type DashboardHeaderProps = {
 
 export function DashboardHeader({ title, description }: DashboardHeaderProps) {
   const { data: session } = useSession();
+  const firstName = session?.user?.name?.split(' ')[0];
 
   return (
     <header className="flex h-auto items-start justify-between gap-4 border-b bg-card p-4 sm:h-14 sm:items-center sm:p-6 sm:px-6">
@@ -28,7 +29,7 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
       {session && (
         <div className="flex items-center gap-4 whitespace-nowrap">
           <p className="text-sm text-muted-foreground hidden sm:block">
-            Welcome, {session.user?.name}
+            Welcome, {firstName}
           </p>
           <Button variant="destructive" onClick={() => signOut({ callbackUrl: '/login' })}>
             Sign Out

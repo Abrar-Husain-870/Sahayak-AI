@@ -75,7 +75,7 @@ export function HistoryLessonPlanViewer({ content }: HistoryLessonPlanViewerProp
         </div>
       )}
 
-      {plan.dailyPlan && (
+      {plan.dailyPlan && Array.isArray(plan.dailyPlan) && (
         <div>
           <h3 className="font-semibold mb-2">Daily Plan</h3>
           <Accordion type="single" collapsible className="w-full">
@@ -167,24 +167,32 @@ export function HistoryLessonPlanViewer({ content }: HistoryLessonPlanViewerProp
       {plan.assessment && (
         <div>
           <h3 className="font-semibold mb-2">Weekly Assessment</h3>
-          {plan.assessment.formative && (
-            <div>
-              <h4 className="font-semibold">Formative:</h4>
-              <div className="prose prose-sm max-w-none text-muted-foreground">
-                <ul>
-                  {plan.assessment.formative.map((objective: string, index: number) => (
-                    <li key={index}>
-                      <ReactMarkdown>{objective}</ReactMarkdown>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          {typeof plan.assessment === 'string' ? (
+            <div className="prose prose-sm max-w-none text-muted-foreground">
+              <ReactMarkdown>{plan.assessment}</ReactMarkdown>
             </div>
-          )}
-          {plan.assessment.summative && (
-            <div className="mt-2">
-              <h4 className="font-semibold">Summative:</h4>
-              <div className="prose prose-sm max-w-none text-muted-foreground"><ReactMarkdown>{plan.assessment.summative}</ReactMarkdown></div>
+          ) : (
+            <div className="prose prose-sm max-w-none text-muted-foreground">
+              {plan.assessment.formative && Array.isArray(plan.assessment.formative) && plan.assessment.formative.length > 0 && (
+                <div className="mb-2">
+                  <h4 className="font-semibold">Formative Assessment:</h4>
+                  <ul className="list-disc list-inside">
+                    {plan.assessment.formative.map((item: string, index: number) => (
+                      <li key={`formative-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {plan.assessment.summative && Array.isArray(plan.assessment.summative) && plan.assessment.summative.length > 0 && (
+                <div>
+                  <h4 className="font-semibold">Summative Assessment:</h4>
+                  <ul className="list-disc list-inside">
+                    {plan.assessment.summative.map((item: string, index: number) => (
+                      <li key={`summative-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>

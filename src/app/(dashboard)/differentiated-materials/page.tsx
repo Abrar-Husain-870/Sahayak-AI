@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSession } from "next-auth/react";
 import { db } from "@/lib/firebase";
@@ -30,9 +30,7 @@ import { Input } from "@/components/ui/input";
 import { LanguageSelect } from "@/components/language-select";
 import { useToast } from "@/hooks/use-toast";
 import { createDifferentiatedMaterials } from "@/ai/flows/create-differentiated-materials";
-import type { CreateDifferentiatedMaterialsOutput } from "@/ai/flows/create-differentiated-materials";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -54,12 +52,9 @@ export default function DifferentiatedMaterialsPage() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  // Initialize with server-safe defaults
   const [preview, setPreview] = useState<string | null>(null);
-  const [generatedWorksheets, setGeneratedWorksheets] = useState<
-    CreateDifferentiatedMaterialsOutput["worksheets"]
-  >([]);
+  const [generatedMaterials, setGeneratedMaterials] = useState<string | undefined>();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -67,8 +62,6 @@ export default function DifferentiatedMaterialsPage() {
       language: "English",
     },
   });
-
-
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,14 +85,15 @@ export default function DifferentiatedMaterialsPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setGeneratedWorksheets([]);
+    setGeneratedMaterials(undefined);
     try {
       const imageBase64 = await toBase64(values.textbookPageImage);
       const result = await createDifferentiatedMaterials({
         ...values,
         textbookPageImage: imageBase64,
       });
-            setGeneratedWorksheets(result.worksheets);
+      
+      setGeneratedMaterials(result.differentiatedMaterials);
 
       if (session?.user?.email) {
         await addDoc(collection(db, "history"), {
@@ -107,7 +101,7 @@ export default function DifferentiatedMaterialsPage() {
           feature: "differentiated-materials",
           request: `Grade Levels: ${values.gradeLevels}`,
           language: values.language,
-          content: JSON.stringify(result.worksheets, null, 2),
+          content: result.differentiatedMaterials, // Store the clean JSON string
           createdAt: serverTimestamp(),
         });
       }
@@ -198,7 +192,7 @@ export default function DifferentiatedMaterialsPage() {
           </Card>
           <DifferentiatedMaterialsResult
             isLoading={isLoading}
-            generatedWorksheets={generatedWorksheets}
+            generatedMaterials={generatedMaterials}
           />
         </div>
       </main>

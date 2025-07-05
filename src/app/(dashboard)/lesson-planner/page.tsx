@@ -40,10 +40,9 @@ const formSchema = z.object({
 export default function LessonPlannerPage() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
-  // Initialize with server-safe defaults
   const [generatedPlan, setGeneratedPlan] = useState("");
+  const [runId, setRunId] = useState(0);
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,6 +57,7 @@ export default function LessonPlannerPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setGeneratedPlan("");
+    setRunId(id => id + 1);
     try {
       const result = await createWeeklyLessonPlan(values);
             setGeneratedPlan(result.lessonPlan);
@@ -148,6 +148,7 @@ export default function LessonPlannerPage() {
             </CardContent>
           </Card>
           <LessonPlannerResult
+            key={runId}
             isLoading={isLoading}
             generatedPlan={generatedPlan}
           />

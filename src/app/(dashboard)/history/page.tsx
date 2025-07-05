@@ -13,6 +13,7 @@ import {
 import { DashboardHeader } from "@/components/dashboard-header";
 import ReactMarkdown from "react-markdown";
 import { HistoryLessonPlanViewer } from "@/components/history/history-lesson-plan-viewer";
+import { HistoryDifferentiatedMaterialsViewer } from "@/components/history/history-differentiated-materials-viewer";
 import {
   Card,
   CardContent,
@@ -172,8 +173,10 @@ export default function HistoryPage() {
                   <p className="font-semibold mb-2">Your request:</p>
                   <p className="text-muted-foreground mb-4">{item.request}</p>
                   <p className="font-semibold mb-2">Generated content:</p>
-                  {item.feature === "lesson-planner" ? (
+                  {item.feature === 'lesson-planner' ? (
                     <HistoryLessonPlanViewer content={item.content} />
+                  ) : item.feature === 'differentiated-materials' ? (
+                    <HistoryDifferentiatedMaterialsViewer content={item.content} />
                   ) : (
                     <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
                       <ReactMarkdown>{item.content}</ReactMarkdown>
